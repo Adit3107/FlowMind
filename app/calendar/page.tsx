@@ -22,12 +22,10 @@ import { getTasks, createTask, updateTask, deleteTask } from "./actions";
 import type { Task } from "@/db/schema";
 
 const CATEGORIES = [
-  { name: "Work", color: "#f15f49", bg: "bg-[#fff1eb] text-[#f15f49] border-[#f6c8b8]" },
-  { name: "Personal", color: "#d97706", bg: "bg-[#fffbeb] text-[#d97706] border-[#fef3c7]" },
-  { name: "Urgent", color: "#e11d48", bg: "bg-[#fff1f2] text-[#e11d48] border-[#ffe4e6]" },
-  { name: "Meeting", color: "#0284c7", bg: "bg-[#f0f9ff] text-[#0284c7] border-[#e0f2fe]" },
-  { name: "Ideas", color: "#059669", bg: "bg-[#f0fdf4] text-[#059669] border-[#d1fae5]" },
-  { name: "Study", color: "#7c3aed", bg: "bg-[#f5f3ff] text-[#7c3aed] border-[#ede9fe]" },
+  { name: "Focus", color: "#0284c7" },
+  { name: "Meeting", color: "#d97706" },
+  { name: "Personal", color: "#e11d48" },
+  { name: "Work", color: "#10b981" },
 ];
 
 const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
@@ -62,6 +60,7 @@ function CalendarPageContent() {
   const [category, setCategory] = useState("Work");
   const [taskType, setTaskType] = useState("task"); // 'task' | 'reminder'
   const [scheduleDate, setScheduleDate] = useState<string>(""); // yyyy-MM-dd
+  const [scheduleTime, setScheduleTime] = useState<string>(""); // HH:mm
 
   // Drag and Drop Dragged Over State
   const [draggedOverDate, setDraggedOverDate] = useState<string | null>(null);
@@ -151,6 +150,23 @@ function CalendarPageContent() {
     setCurrentDate(new Date());
   };
 
+  const handleDateChange = (newDateStr: string) => {
+    setScheduleDate(newDateStr);
+    if (newDateStr) {
+      setDialogPresetDate(new Date(newDateStr + "T00:00:00"));
+    } else {
+      setDialogPresetDate(null);
+    }
+  };
+
+  const getFormattedPresetDate = () => {
+    if (!dialogPresetDate) return "Draft / Unscheduled";
+    const m = dialogPresetDate.getMonth() + 1;
+    const d = dialogPresetDate.getDate();
+    const y = dialogPresetDate.getFullYear();
+    return `${m}/${d}/${y}`;
+  };
+
   // Modal Openers
   const openCreateDialog = (date: Date | null = null) => {
     setSelectedTask(null);
@@ -159,6 +175,7 @@ function CalendarPageContent() {
     setDescription("");
     setCategory("Work");
     setTaskType("task");
+    setScheduleTime("");
     if (date) {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -172,45 +189,129 @@ function CalendarPageContent() {
 
   const openEditDialog = (task: Task) => {
     setSelectedTask(task);
-    setDialogPresetDate(task.date);
     setTitle(task.title);
     setDescription(task.description || "");
     setCategory(task.category);
     setTaskType(task.type);
     if (task.date) {
-      const dateObj = new Date(task.date);
-      const year = dateObj.getFullYear();
-      const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-      const day = String(dateObj.getDate()).padStart(2, "0");
+      const d = new Date(task.date);
+      setDialogPresetDate(d);
+      
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
       setScheduleDate(`${year}-${month}-${day}`);
+
+      const hours = String(d.getHours()).padStart(2, "0");
+      const minutes = String(d.getMinutes()).padStart(2, "0");
+      setScheduleTime(`${hours}:${minutes}`);
     } else {
+      setDialogPresetDate(null);
       setScheduleDate("");
+      setScheduleTime("");
     }
     setIsDialogOpen(true);
   };
 
-  // CRUD handlers
-  const handleSaveTask = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Save as Draft
+  const handleSaveAsDraft = async () => {
     if (!title.trim()) return;
-
-    const parsedDate = scheduleDate ? new Date(scheduleDate + "T12:00:00") : null;
-    const activeCategory = CATEGORIES.find(c => c.name === category) || CATEGORIES[0];
-
     setIsDialogOpen(false);
+
+    const activeCat = CATEGORIES.find((c) => c.name === category) || CATEGORIES[0];
 
     try {
       if (selectedTask) {
-        // Update Optimistic
-        setTasksList(prev =>
-          prev.map(t =>
+        setTasksList((prev) =>
+          prev.map((t) =>
             t.id === selectedTask.id
               ? {
                   ...t,
                   title,
                   description,
                   category,
-                  color: activeCategory.color,
+                  color: activeCat.color,
+                  type: taskType,
+                  date: null,
+                }
+              : t
+          )
+        );
+        await updateTask(selectedTask.id, {
+          title,
+          description,
+          category,
+          color: activeCat.color,
+          type: taskType,
+          date: null,
+        });
+      } else {
+        const tempId = -Math.floor(Math.random() * 1000000);
+        const tempTask: Task = {
+          id: tempId,
+          userId: "temp",
+          title,
+          description,
+          category,
+          color: activeCat.color,
+          type: taskType,
+          date: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        setTasksList((prev) => [...prev, tempTask]);
+
+        const realTask = await createTask({
+          title,
+          description,
+          date: null,
+          category,
+          color: activeCat.color,
+          type: taskType,
+        });
+        setTasksList((prev) => prev.map((t) => (t.id === tempId ? realTask : t)));
+      }
+    } catch (err) {
+      console.error("Save draft failed:", err);
+      loadTasks();
+    }
+  };
+
+  // Save as Scheduled
+  const handleScheduleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+
+    if (!scheduleDate) {
+      alert("Please select a date to schedule this item.");
+      return;
+    }
+
+    setIsDialogOpen(false);
+
+    const dateParts = scheduleDate.split("-");
+    const timeParts = (scheduleTime || "12:00").split(":");
+    const parsedDate = new Date(
+      Number(dateParts[0]),
+      Number(dateParts[1]) - 1,
+      Number(dateParts[2]),
+      Number(timeParts[0]),
+      Number(timeParts[1])
+    );
+
+    const activeCat = CATEGORIES.find((c) => c.name === category) || CATEGORIES[0];
+
+    try {
+      if (selectedTask) {
+        setTasksList((prev) =>
+          prev.map((t) =>
+            t.id === selectedTask.id
+              ? {
+                  ...t,
+                  title,
+                  description,
+                  category,
+                  color: activeCat.color,
                   type: taskType,
                   date: parsedDate,
                 }
@@ -221,12 +322,11 @@ function CalendarPageContent() {
           title,
           description,
           category,
-          color: activeCategory.color,
+          color: activeCat.color,
           type: taskType,
           date: parsedDate,
         });
       } else {
-        // Create optimistic mock task to prevent visual lag
         const tempId = -Math.floor(Math.random() * 1000000);
         const tempTask: Task = {
           id: tempId,
@@ -234,28 +334,26 @@ function CalendarPageContent() {
           title,
           description,
           category,
-          color: activeCategory.color,
+          color: activeCat.color,
           type: taskType,
           date: parsedDate,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
-        setTasksList(prev => [...prev, tempTask]);
-        
+        setTasksList((prev) => [...prev, tempTask]);
+
         const realTask = await createTask({
           title,
           description,
           date: parsedDate,
           category,
-          color: activeCategory.color,
+          color: activeCat.color,
           type: taskType,
         });
-
-        // Replace optimistic task with DB result
-        setTasksList(prev => prev.map(t => (t.id === tempId ? realTask : t)));
+        setTasksList((prev) => prev.map((t) => (t.id === tempId ? realTask : t)));
       }
     } catch (err) {
-      console.error("Save task failed:", err);
+      console.error("Schedule task failed:", err);
       loadTasks();
     }
   };
@@ -662,131 +760,161 @@ function CalendarPageContent() {
       {/* CREATE & EDIT TASK MODAL DIALOG */}
       {isDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-xs">
-          <div className="w-full max-w-[480px] bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200">
+          <div className="w-full max-w-[500px] bg-white rounded-[20px] shadow-xl border border-[#eadfc8]/50 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200 p-6 md:p-8 space-y-6">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-[#fbf7ef]/30">
-              <h3 className="text-[17px] font-bold text-slate-900">
-                {selectedTask ? "Edit task details" : "Schedule new task"}
-              </h3>
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-[20px] font-semibold text-slate-900 tracking-tight">
+                  {selectedTask ? "Edit calendar item" : "Create calendar item"}
+                </h3>
+                <p className="text-[13.5px] text-slate-500 mt-1">
+                  Selected date: {getFormattedPresetDate()}
+                </p>
+              </div>
               <button
+                type="button"
                 onClick={() => setIsDialogOpen(false)}
-                className="h-7 w-7 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 inline-flex items-center justify-center transition cursor-pointer"
+                className="text-[13.5px] font-semibold text-slate-500 hover:text-slate-955 hover:underline transition cursor-pointer"
               >
-                <X className="h-4 w-4" />
+                Close
               </button>
             </div>
 
             {/* Modal Form */}
-            <form onSubmit={handleSaveTask} className="p-5 space-y-4">
+            <form onSubmit={handleScheduleSubmit} className="space-y-5">
               {/* Task Title */}
               <div className="space-y-1.5">
-                <label className="text-[12px] font-bold text-slate-500 uppercase tracking-wider">
-                  Title
+                <label className="text-[13.5px] font-semibold text-slate-800">
+                  Task title
                 </label>
                 <input
                   type="text"
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Design review with Zack"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13.5px] font-medium placeholder-slate-400 focus:outline-none focus:border-[#f15f49] focus:ring-1 focus:ring-[#f15f49] bg-white"
+                  placeholder="Write the next thing to remember"
+                  className="w-full px-4 py-3 rounded-xl border border-[#ebdcb9] bg-[#fffcf6] text-[13.5px] font-medium placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#f15f49] focus:border-[#f15f49] text-slate-800"
                 />
               </div>
 
               {/* Description */}
               <div className="space-y-1.5">
-                <label className="text-[12px] font-bold text-slate-500 uppercase tracking-wider">
-                  Description / Notes
+                <label className="text-[13.5px] font-semibold text-slate-800">
+                  Description
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Add details, notes, or lists..."
-                  rows={3}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13.5px] font-medium placeholder-slate-400 focus:outline-none focus:border-[#f15f49] focus:ring-1 focus:ring-[#f15f49] resize-none bg-white"
+                  placeholder="Add helpful context"
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-xl border border-[#ebdcb9] bg-[#fffcf6] text-[13.5px] font-medium placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#f15f49] focus:border-[#f15f49] resize-none text-slate-800"
                 />
               </div>
 
-              {/* Schedule Date */}
-              <div className="space-y-1.5">
-                <label className="text-[12px] font-bold text-slate-500 uppercase tracking-wider">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  value={scheduleDate}
-                  onChange={(e) => setScheduleDate(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13.5px] font-medium focus:outline-none focus:border-[#f15f49] focus:ring-1 focus:ring-[#f15f49] bg-white text-slate-700"
-                />
-                <span className="text-[11px] text-slate-400 inline-block mt-1 italic">
-                  Leave empty to save as a draft in the Draft Task Panel.
-                </span>
-              </div>
+              {/* Grid for Date, Time, Type */}
+              <div className="grid grid-cols-3 gap-4">
+                {/* Date Selection */}
+                <div className="space-y-1.5">
+                  <label className="text-[13.5px] font-semibold text-slate-800">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={scheduleDate}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-[#ebdcb9] bg-[#fffcf6] text-[13.5px] font-medium focus:outline-none focus:ring-1 focus:ring-[#f15f49] focus:border-[#f15f49] text-slate-700 cursor-pointer"
+                  />
+                </div>
 
-              {/* Type and Category Grid */}
-              <div className="grid grid-cols-2 gap-4">
+                {/* Time Selection */}
+                <div className="space-y-1.5 relative">
+                  <label className="text-[13.5px] font-semibold text-slate-800">
+                    Time
+                  </label>
+                  <input
+                    type="time"
+                    value={scheduleTime}
+                    onChange={(e) => setScheduleTime(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-[#ebdcb9] bg-[#fffcf6] text-[13.5px] font-medium focus:outline-none focus:ring-1 focus:ring-[#f15f49] focus:border-[#f15f49] text-slate-700 cursor-pointer"
+                  />
+                </div>
+
                 {/* Type Selection */}
                 <div className="space-y-1.5">
-                  <label className="text-[12px] font-bold text-slate-500 uppercase tracking-wider">
+                  <label className="text-[13.5px] font-semibold text-slate-800">
                     Type
                   </label>
                   <select
                     value={taskType}
                     onChange={(e) => setTaskType(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13.5px] font-semibold text-slate-700 focus:outline-none focus:border-[#f15f49] bg-white cursor-pointer"
+                    className="w-full px-4 py-3 rounded-xl border border-[#ebdcb9] bg-[#fffcf6] text-[13.5px] font-semibold text-slate-700 focus:outline-none focus:border-[#f15f49] focus:border-[#f15f49] cursor-pointer"
                   >
-                    <option value="task">📝 Task</option>
-                    <option value="reminder">🔔 Reminder</option>
-                  </select>
-                </div>
-
-                {/* Category Selection */}
-                <div className="space-y-1.5">
-                  <label className="text-[12px] font-bold text-slate-500 uppercase tracking-wider">
-                    Category
-                  </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-[13.5px] font-semibold text-slate-700 focus:outline-none focus:border-[#f15f49] bg-white cursor-pointer"
-                  >
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat.name} value={cat.name}>
-                        {cat.name}
-                      </option>
-                    ))}
+                    <option value="task">Task</option>
+                    <option value="reminder">Reminder</option>
                   </select>
                 </div>
               </div>
 
-              {/* Form Actions */}
+              {/* Category */}
+              <div className="space-y-2">
+                <label className="text-[13.5px] font-semibold text-slate-800 block">
+                  Category
+                </label>
+                <div className="flex flex-wrap gap-2.5">
+                  {[
+                    { name: "Focus", dotBg: "bg-[#0284c7]", text: "text-[#0284c7]", border: "border-[#e0f2fe]" },
+                    { name: "Meeting", dotBg: "bg-[#d97706]", text: "text-[#d97706]", border: "border-[#fef3c7]" },
+                    { name: "Personal", dotBg: "bg-[#e11d48]", text: "text-[#e11d48]", border: "border-[#ffe4e6]" },
+                    { name: "Work", dotBg: "bg-[#10b981]", text: "text-[#10b981]", border: "border-[#d1fae5]" },
+                  ].map((cat) => {
+                    const isSelected = category === cat.name;
+                    return (
+                      <button
+                        key={cat.name}
+                        type="button"
+                        onClick={() => setCategory(cat.name)}
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-xl px-4 py-2 border text-[13px] font-semibold transition cursor-pointer",
+                          isSelected
+                            ? "border-[1.5px] border-[#f15f49] bg-white text-slate-900 shadow-xs"
+                            : cn(cat.border, cat.text, "bg-white hover:brightness-98")
+                        )}
+                      >
+                        <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", cat.dotBg)} />
+                        {cat.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Bottom Actions */}
               <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
                 {selectedTask ? (
                   <button
                     type="button"
                     onClick={handleDeleteTask}
-                    className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 px-4 text-[13.5px] font-bold transition cursor-pointer"
+                    className="text-rose-600 hover:text-rose-700 hover:underline font-bold text-[13.5px] transition cursor-pointer"
                   >
-                    <Trash2 className="h-4 w-4" />
-                    Delete
+                    Delete task
                   </button>
                 ) : (
                   <div />
                 )}
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => setIsDialogOpen(false)}
-                    className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 px-4 text-[13.5px] font-bold transition cursor-pointer"
+                    onClick={handleSaveAsDraft}
+                    className="inline-flex h-[42px] items-center justify-center rounded-xl border border-[#ebdcb9] bg-[#fffcf6] text-slate-800 px-5 text-[13.5px] font-semibold hover:bg-slate-50 transition cursor-pointer shadow-xs"
                   >
-                    Cancel
+                    Save draft
                   </button>
                   <button
                     type="submit"
-                    className="inline-flex h-10 items-center justify-center rounded-xl bg-[#f15f49] hover:brightness-95 text-white px-5 text-[13.5px] font-bold shadow-sm shadow-orange-100 transition cursor-pointer"
+                    className="inline-flex h-[42px] items-center justify-center rounded-xl bg-[#f15f49] hover:brightness-98 text-white px-6 text-[13.5px] font-semibold shadow-xs shadow-orange-100 transition cursor-pointer"
                   >
-                    Save
+                    {selectedTask ? "Save changes" : "Schedule"}
                   </button>
                 </div>
               </div>

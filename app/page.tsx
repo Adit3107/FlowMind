@@ -1,169 +1,462 @@
-import React from 'react';
+"use client";
 
-export default function Home() {
+import { useState, type ComponentType } from "react";
+import {
+  ArrowLeftToLine,
+  ArrowRight,
+  ArrowRightToLine,
+  BookOpenText,
+  CalendarDays,
+  ChevronDown,
+  ChevronRight,
+  Circle,
+  Columns3,
+  HomeIcon,
+  LayoutDashboard,
+  LifeBuoy,
+  Menu,
+  MessageSquareMore,
+  PenTool,
+  Search,
+  Settings2,
+  Sparkles,
+  StickyNote,
+  Plus,
+  TimerReset,
+  Wand2,
+  SquareKanban,
+} from "lucide-react";
+
+import { cn } from "@/lib/utils";
+
+type NavItem = {
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  color: string;
+  active?: boolean;
+};
+
+type NavGroup = {
+  label: string;
+  items: NavItem[];
+};
+
+const navGroups: NavGroup[] = [
+  {
+    label: "HOME",
+    items: [
+      { label: "Dashboard", icon: HomeIcon, color: "text-orange-500", active: true },
+      { label: "AI Assistant", icon: Sparkles, color: "text-violet-500" },
+    ],
+  },
+  {
+    label: "WORKSPACE",
+    items: [
+      { label: "Calendar", icon: CalendarDays, color: "text-emerald-600" },
+      { label: "Task / Kanban", icon: SquareKanban, color: "text-amber-600" },
+      { label: "Notes", icon: StickyNote, color: "text-sky-600" },
+      { label: "Whiteboard", icon: PenTool, color: "text-rose-500" },
+      { label: "Pages / Spaces", icon: BookOpenText, color: "text-indigo-500" },
+    ],
+  },
+  {
+    label: "BUILD",
+    items: [
+      { label: "AI Template Builder", icon: Wand2, color: "text-pink-500" },
+      { label: "Settings", icon: Settings2, color: "text-slate-500" },
+    ],
+  },
+];
+
+const quickCards = [
+  {
+    title: "Calendar",
+    stat: "0 upcoming items",
+    note: "0 drafts saved",
+    color: "from-emerald-100 to-emerald-50 border-emerald-200 text-emerald-700",
+    icon: CalendarDays,
+  },
+  {
+    title: "Kanban / Tasks",
+    stat: "0 tasks",
+    note: "0 completed across 1 board",
+    color: "from-amber-100 to-amber-50 border-amber-200 text-amber-700",
+    icon: SquareKanban,
+  },
+  {
+    title: "Notes",
+    stat: "0 notes",
+    note: "0 pinned notes ready",
+    color: "from-sky-100 to-sky-50 border-sky-200 text-sky-700",
+    icon: StickyNote,
+  },
+  {
+    title: "Whiteboard",
+    stat: "0 boards",
+    note: "Canvas ready",
+    color: "from-rose-100 to-rose-50 border-rose-200 text-rose-700",
+    icon: PenTool,
+  },
+  {
+    title: "AI Assistant",
+    stat: "0 actions",
+    note: "Today",
+    color: "from-violet-100 to-violet-50 border-violet-200 text-violet-700",
+    icon: Sparkles,
+  },
+  {
+    title: "AI Template Builder",
+    stat: "0 templates",
+    note: "0 sidebar apps pinned",
+    color: "from-pink-100 to-pink-50 border-pink-200 text-pink-700",
+    icon: LayoutDashboard,
+  },
+];
+
+const quickAccess = [
+  {
+    title: "Create Task",
+    note: "Open your Kanban workspace.",
+    icon: PlusIcon,
+    color: "bg-amber-100 border-amber-200 text-amber-700",
+  },
+  {
+    title: "Add Calendar Reminder",
+    note: "Schedule a task or reminder.",
+    icon: CalendarDays,
+    color: "bg-emerald-100 border-emerald-200 text-emerald-700",
+  },
+  {
+    title: "Create Note",
+    note: "Capture a fresh thought.",
+    icon: MessageSquareMore,
+    color: "bg-sky-100 border-sky-200 text-sky-700",
+  },
+  {
+    title: "Open Whiteboard",
+    note: "Sketch ideas visually.",
+    icon: PenTool,
+    color: "bg-rose-100 border-rose-200 text-rose-700",
+  },
+  {
+    title: "Ask AI Assistant",
+    note: "Plan or act across the app.",
+    icon: Sparkles,
+    color: "bg-violet-100 border-violet-200 text-violet-700",
+  },
+  {
+    title: "Generate AI Template",
+    note: "Build a mini productivity app.",
+    icon: Wand2,
+    color: "bg-pink-100 border-pink-200 text-pink-700",
+  },
+];
+
+const taskSummary = [
+  { label: "Total", value: "0", color: "bg-sky-100" },
+  { label: "Completed", value: "0", color: "bg-emerald-100" },
+  { label: "Pending", value: "0", color: "bg-amber-100" },
+  { label: "Overdue", value: "0", color: "bg-rose-100" },
+];
+
+function PlusIcon({ className }: { className?: string }) {
+  return <Plus className={className} />;
+}
+
+function BrandMark() {
   return (
-    <main style={styles.container}>
-      <div style={styles.hero}>
-        <div style={styles.badge}>Next.js Boilerplate CLI 🚀</div>
-        <h1 style={styles.title}>
-          Your Premium SaaS Stack <span style={styles.gradient}>Is Ready</span>
-        </h1>
-        <p style={styles.subtitle}>
-          Congratulations! Your customized Next.js boilerplate has been successfully scaffolded with all your selected databases, components, and authentication configurations.
-        </p>
-        
-        <div style={styles.ctaGroup}>
-          <a href="https://nextjs.org/docs" target="_blank" rel="noopener noreferrer" style={styles.primaryCta}>
-            Read Next.js Docs
-          </a>
-          <a href="#features" style={styles.secondaryCta}>
-            Explore Stack Files
-          </a>
-        </div>
-      </div>
-
-      <section id="features" style={styles.grid}>
-        <div style={styles.card}>
-          <div style={styles.icon}>⚡</div>
-          <h3 style={styles.cardTitle}>App Router Ready</h3>
-          <p style={styles.cardText}>Built using modern Next.js 15 App Router with full Server Components and safe SEO presets.</p>
-        </div>
-        
-        <div style={styles.card}>
-          <div style={styles.icon}>🔒</div>
-          <h3 style={styles.cardTitle}>Modular Auth</h3>
-          <p style={styles.cardText}>Pre-configured middleware rules and pages for secure, lightning-fast session validation.</p>
-        </div>
-
-        <div style={styles.card}>
-          <div style={styles.icon}>🗄️</div>
-          <h3 style={styles.cardTitle}>Database Integration</h3>
-          <p style={styles.cardText}>Configured connections, client instances, schemas, and live migration configurations.</p>
-        </div>
-      </section>
-
-      <footer style={styles.footer}>
-        Created with <span style={{ color: '#ec4899' }}>♥</span> by{' '}
-        <a
-          href="https://www.youtube.com/@tubeguruji"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: '#71717a', textDecoration: 'underline', transition: 'color 0.2s' }}
-        >
-          Tubeguruji
-        </a>
-      </footer>
-    </main>
+    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f15f49] text-white shadow-sm shadow-orange-200">
+      <Columns3 className="h-5 w-5" />
+    </div>
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#09090b',
-    color: '#fafafa',
-    fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif",
-    padding: '2rem',
-    boxSizing: 'border-box',
-  },
-  hero: {
-    textAlign: 'center',
-    maxWidth: '800px',
-    marginBottom: '4rem',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
-  badge: {
-    display: 'inline-block',
-    padding: '0.5rem 1rem',
-    borderRadius: '9999px',
-    backgroundColor: '#27272a',
-    fontSize: '0.875rem',
-    fontWeight: 500,
-    color: '#38bdf8',
-    marginBottom: '1.5rem',
-    border: '1px solid #3f3f46',
-  },
-  title: {
-    fontSize: '3rem',
-    fontWeight: 800,
-    letterSpacing: '-0.025em',
-    lineHeight: 1.2,
-    margin: '0 0 1rem 0',
-  },
-  gradient: {
-    background: 'linear-gradient(to right, #38bdf8, #818cf8, #c084fc)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-  },
-  subtitle: {
-    fontSize: '1.125rem',
-    color: '#a1a1aa',
-    lineHeight: 1.6,
-    margin: '0 0 2rem 0',
-    maxWidth: '600px',
-  },
-  ctaGroup: {
-    display: 'flex',
-    gap: '1rem',
-  },
-  primaryCta: {
-    padding: '0.75rem 1.5rem',
-    borderRadius: '8px',
-    backgroundColor: '#38bdf8',
-    color: '#09090b',
-    fontWeight: 600,
-    textDecoration: 'none',
-    transition: 'opacity 0.2s',
-  },
-  secondaryCta: {
-    padding: '0.75rem 1.5rem',
-    borderRadius: '8px',
-    backgroundColor: 'transparent',
-    color: '#fafafa',
-    fontWeight: 600,
-    textDecoration: 'none',
-    border: '1px solid #3f3f46',
-    transition: 'background-color 0.2s',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-    gap: '2rem',
-    width: '100%',
-    maxWidth: '1000px',
-    marginBottom: '4rem',
-  },
-  card: {
-    backgroundColor: '#18181b',
-    border: '1px solid #27272a',
-    borderRadius: '12px',
-    padding: '1.5rem',
-    transition: 'transform 0.2s, border-color 0.2s',
-  },
-  icon: {
-    fontSize: '2rem',
-    marginBottom: '1rem',
-  },
-  cardTitle: {
-    fontSize: '1.25rem',
-    fontWeight: 600,
-    margin: '0 0 0.5rem 0',
-  },
-  cardText: {
-    fontSize: '0.875rem',
-    color: '#a1a1aa',
-    lineHeight: 1.5,
-    margin: 0,
-  },
-  footer: {
-    fontSize: '0.875rem',
-    color: '#71717a',
-    marginTop: 'auto',
-  },
-};
+export default function Home() {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  return (
+    <main className="min-h-screen bg-[#f6f1e6] text-slate-900">
+      <div className="flex min-h-screen">
+        <aside
+          className={cn(
+            "fixed inset-y-0 left-0 z-40 flex h-screen flex-col border-r border-[#eadfc8] bg-[#fbf7ef] transition-all duration-300 ease-out md:static md:translate-x-0",
+            isCollapsed ? "w-[86px]" : "w-[292px]",
+            isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          )}
+        >
+          <div className={cn("flex items-start gap-3 px-4 pt-4", isCollapsed && "justify-center px-3")}>
+            <BrandMark />
+            {!isCollapsed && (
+              <div className="min-w-0 pt-0.5">
+                <div className="text-[18px] font-semibold leading-tight text-slate-950">Flowbase</div>
+                <div className="text-[13px] text-slate-500">Cozy workspace</div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 px-4 pt-4">
+            <button
+              type="button"
+              onClick={() => setIsCollapsed((value) => !value)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[#eadfc8] bg-white text-slate-600 shadow-sm transition hover:bg-slate-50"
+              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {isCollapsed ? <ArrowRightToLine className="h-4 w-4" /> : <ArrowLeftToLine className="h-4 w-4" />}
+            </button>
+
+            {!isCollapsed && (
+              <label className="flex h-9 flex-1 items-center gap-2 rounded-xl border border-[#eadfc8] bg-white px-3 text-slate-500 shadow-sm">
+                <Search className="h-4 w-4" />
+                <span className="text-[13px]">Search everything</span>
+              </label>
+            )}
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-3 pb-4 pt-4">
+            <div className="space-y-4">
+              {navGroups.map((group) => (
+                <section key={group.label} className="space-y-2">
+                  {!isCollapsed && (
+                    <div className="px-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                      {group.label}
+                    </div>
+                  )}
+                  <div className="space-y-1">
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={item.label}
+                          type="button"
+                          className={cn(
+                            "group flex h-9 w-full items-center rounded-xl border px-2.5 text-[12.5px] font-medium transition",
+                            item.active
+                              ? "border-[#f6c8b8] bg-[#fff1eb] text-[#f15f49]"
+                              : "border-transparent text-slate-600 hover:border-[#eadfc8] hover:bg-white hover:text-slate-900",
+                            isCollapsed ? "justify-center px-0" : "gap-2.5"
+                          )}
+                        >
+                          <Icon className={cn("h-4 w-4 shrink-0", item.active ? "text-[#f15f49]" : item.color)} />
+                          {!isCollapsed && <span className="truncate">{item.label}</span>}
+                          {!isCollapsed && !item.active && <ChevronRight className="ml-auto h-3.5 w-3.5 text-slate-300" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t border-[#eadfc8] p-3">
+            {!isCollapsed ? (
+              <div className="rounded-2xl border border-[#eadfc8] bg-white p-3 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eaf2ea] text-[#64806b]">
+                      <Circle className="h-3.5 w-3.5 fill-current" />
+                    </div>
+                    <div>
+                      <div className="text-[13px] font-semibold text-slate-950">Studio space</div>
+                      <div className="text-[11px] text-slate-500">5 collaborators</div>
+                    </div>
+                  </div>
+                  <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3 py-1">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm">
+                  <LifeBuoy className="h-4 w-4" />
+                </div>
+                <div className="h-2 w-2 rounded-full bg-emerald-500" />
+              </div>
+            )}
+          </div>
+        </aside>
+
+        <div className="flex min-h-screen flex-1 flex-col md:ml-0">
+          <header className="border-b border-[#eadfc8] bg-[#fbf7ef]/85 backdrop-blur">
+            <div className="flex items-center gap-3 px-4 py-3 md:px-6">
+              <button
+                type="button"
+                onClick={() => setIsMobileOpen((value) => !value)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#eadfc8] bg-white text-slate-700 shadow-sm md:hidden"
+                aria-label="Toggle sidebar"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 text-[13px] font-medium text-[#c5664f]">
+                  <Circle className="h-2.5 w-2.5 fill-current text-[#c5664f]" />
+                  Dashboard
+                </div>
+                <h1 className="mt-2 text-[46px] font-semibold leading-[1.05] tracking-[-0.04em] text-slate-950 md:text-[56px]">
+                  Welcome back, Zack Crawley.
+                </h1>
+                <p className="mt-4 max-w-3xl text-[16px] leading-7 text-slate-600 md:text-[17px]">
+                  Your workspace is awake: tasks, calendar, pages, and AI work are gathered here for a clear start.
+                </p>
+
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <button className="inline-flex items-center gap-2 rounded-xl bg-[#f15f49] px-5 py-3 text-[16px] font-semibold text-white shadow-sm shadow-orange-200 transition hover:brightness-95">
+                    <ArrowRight className="h-5 w-5" />
+                    New task
+                  </button>
+                  <button className="inline-flex items-center gap-2 rounded-xl border border-[#eadfc8] bg-white px-5 py-3 text-[16px] font-semibold text-slate-900 shadow-sm transition hover:bg-slate-50">
+                    <CalendarDays className="h-5 w-5 text-emerald-600" />
+                    Calendar
+                  </button>
+                </div>
+              </div>
+
+              <div className="hidden xl:block xl:w-[420px]">
+                <div className="grid grid-cols-3 gap-2 rounded-2xl border border-white/70 bg-white/65 p-2 shadow-sm backdrop-blur">
+                  {[
+                    { label: "TASKS", value: "0" },
+                    { label: "COMPLETE", value: "0%" },
+                    { label: "UPCOMING", value: "0" },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-xl bg-white p-4">
+                      <div className="text-[12px] font-semibold text-slate-400">{item.label}</div>
+                      <div className="mt-2 text-[34px] font-semibold tracking-tight text-slate-900">{item.value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <section className="flex-1 px-4 py-6 md:px-6 md:py-7">
+            <div className="space-y-6">
+              <section className="relative overflow-hidden rounded-[24px] border border-[#eadfc8] bg-[linear-gradient(90deg,_#fff2ef_0%,_#f0f8ef_44%,_#e7f8fb_100%)] p-6 shadow-sm md:p-8">
+                <div className="absolute right-0 top-0 h-28 w-28 rounded-bl-[90px] bg-[#f0e4a7]" />
+                <div className="absolute bottom-0 right-[12%] h-24 w-24 rounded-t-full bg-[#fadbe2]" />
+
+                <div className="grid gap-5 xl:grid-cols-[1fr_520px] xl:items-end">
+                  <div className="max-w-3xl">
+                    <div className="inline-flex items-center gap-2 text-[16px] font-semibold text-[#ba4c3d]">
+                      <Sparkles className="h-4 w-4" />
+                      Dashboard
+                    </div>
+                    <h2 className="mt-4 text-[24px] font-semibold tracking-tight text-slate-950 md:text-[29px]">
+                      A calm launchpad for your day.
+                    </h2>
+                    <p className="mt-4 max-w-2xl text-[15px] leading-7 text-slate-600 md:text-[16px]">
+                      Notion-style planning on the left, Miro-like exploration in the center, and the essentials surfaced with a lighter, fresher palette.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 rounded-2xl border border-white/60 bg-white/55 p-3 backdrop-blur">
+                    {[
+                      { label: "TASKS", value: "0" },
+                      { label: "COMPLETE", value: "0%" },
+                      { label: "UPCOMING", value: "0" },
+                    ].map((item) => (
+                      <div key={item.label} className="rounded-xl bg-white/90 p-4 shadow-sm">
+                        <div className="text-[12px] font-semibold text-slate-400">{item.label}</div>
+                        <div className="mt-2 text-[30px] font-semibold tracking-tight text-slate-900">{item.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+                {quickCards.map((card) => {
+                  const Icon = card.icon;
+                  return (
+                    <article
+                      key={card.title}
+                      className={cn(
+                        "rounded-[18px] border bg-gradient-to-br p-4 shadow-sm",
+                        card.color
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/75 shadow-sm">
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <span className="rounded-full bg-white/75 px-3 py-1 text-[12px] font-semibold text-slate-500">Ready</span>
+                      </div>
+                      <div className="mt-5 text-[16px] font-medium text-slate-900">{card.title}</div>
+                      <div className="mt-2 text-[28px] font-semibold tracking-tight text-slate-950 leading-[1.05]">{card.stat}</div>
+                      <div className="mt-2 text-[13px] text-slate-600">{card.note}</div>
+                    </article>
+                  );
+                })}
+              </section>
+
+              <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#eadfc8] bg-white shadow-sm">
+                      <ArrowRight className="h-5 w-5 text-[#f15f49]" />
+                    </div>
+                    <h3 className="text-[20px] font-semibold tracking-tight text-slate-950">Quick access</h3>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {quickAccess.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={item.title}
+                          className={cn(
+                            "rounded-[18px] border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md",
+                            item.color
+                          )}
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/85 shadow-sm">
+                              <Icon className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-[16px] font-semibold text-slate-900">{item.title}</div>
+                              <div className="mt-1 text-[13px] leading-6 text-slate-600">{item.note}</div>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <aside className="rounded-[22px] border border-[#eadfc8] bg-white p-5 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#eadfc8] bg-[#fff8f1]">
+                      <TimerReset className="h-5 w-5 text-[#f15f49]" />
+                    </div>
+                    <h3 className="text-[20px] font-semibold tracking-tight text-slate-950">Task summary</h3>
+                  </div>
+
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    {taskSummary.map((item) => (
+                      <div key={item.label} className={cn("rounded-[18px] p-4", item.color)}>
+                        <div className="text-[13px] text-slate-600">{item.label}</div>
+                        <div className="mt-4 text-[34px] font-semibold tracking-tight text-slate-950 leading-none">
+                          {item.value}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </aside>
+              </section>
+            </div>
+          </section>
+        </div>
+
+        {isMobileOpen && (
+          <button
+            type="button"
+            onClick={() => setIsMobileOpen(false)}
+            className="fixed inset-0 z-30 bg-slate-950/25 md:hidden"
+            aria-label="Close sidebar overlay"
+          />
+        )}
+      </div>
+    </main>
+  );
+}

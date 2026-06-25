@@ -6,13 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Trash2,
-  X,
-  Bell,
-  CheckSquare,
-  Sparkles,
-  Inbox,
-  FolderOpen,
   Menu,
 } from "lucide-react";
 
@@ -20,6 +13,10 @@ import { SidebarLayout, useSidebar } from "@/components/sidebar";
 import { cn } from "@/lib/utils";
 import { getTasks, createTask, updateTask, deleteTask } from "./actions";
 import type { Task } from "@/db/schema";
+
+import { CalendarGrid } from "./components/CalendarGrid";
+import { DraftTaskPanel } from "./components/DraftTaskPanel";
+import { TaskDialog } from "./components/TaskDialog";
 
 const CATEGORIES = [
   { name: "Focus", color: "#0284c7" },
@@ -157,14 +154,6 @@ function CalendarPageContent() {
     } else {
       setDialogPresetDate(null);
     }
-  };
-
-  const getFormattedPresetDate = () => {
-    if (!dialogPresetDate) return "Draft / Unscheduled";
-    const m = dialogPresetDate.getMonth() + 1;
-    const d = dialogPresetDate.getDate();
-    const y = dialogPresetDate.getFullYear();
-    return `${m}/${d}/${y}`;
   };
 
   // Modal Openers
@@ -550,111 +539,27 @@ function CalendarPageContent() {
             </div>
           </div>
 
-          {/* Calendar Grid Container */}
-          <div className="mt-4 flex-1">
-            {/* Weekday Labels */}
-            <div className="grid grid-cols-7 gap-px border-b border-slate-100 pb-2 text-center">
-              {WEEKDAYS.map((day) => (
-                <div key={day} className="text-[11px] font-bold tracking-[0.08em] text-slate-400">
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            {/* Calendar Cells */}
-            <div
-              className={cn(
-                "grid grid-cols-7 gap-px bg-slate-100/60 mt-1 border border-slate-100 rounded-2xl overflow-hidden",
-                view === "month" ? "grid-rows-6 min-h-[500px]" : "grid-rows-1 min-h-[220px]"
-              )}
-            >
-              {daysGrid.map((day, idx) => {
-                const dayTasks = getTasksForDay(day);
-                const isCurrentMonth = day.getMonth() === currentDate.getMonth();
-                const isToday = isSameDay(day, new Date());
-                const dateKey = day.toISOString();
-                const isDraggedOver = draggedOverDate === dateKey;
-
-                return (
-                  <div
-                    key={idx}
-                    onDragOver={handleDragOver}
-                    onDragEnter={(e) => {
-                      e.preventDefault();
-                      setDraggedOverDate(dateKey);
-                    }}
-                    onDragLeave={() => setDraggedOverDate(null)}
-                    onDrop={(e) => handleDropOnDay(e, day)}
-                    className={cn(
-                      "bg-white p-2 min-h-[90px] flex flex-col justify-between transition-colors border-r border-b border-slate-100 relative group/cell",
-                      !isCurrentMonth && "bg-slate-50/50 text-slate-400",
-                      isToday && "bg-[#fffbeb]/30",
-                      isDraggedOver && "bg-emerald-50/70 border-emerald-300 z-10"
-                    )}
-                  >
-                    {/* Day number and quick add trigger */}
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={cn(
-                          "inline-flex h-6 w-6 items-center justify-center rounded-full text-[12.5px] font-bold",
-                          isToday && "bg-[#f15f49] text-white shadow-sm",
-                          !isToday && isCurrentMonth && "text-slate-800",
-                          !isToday && !isCurrentMonth && "text-slate-300"
-                        )}
-                      >
-                        {day.getDate()}
-                      </span>
-                      <button
-                        onClick={() => openCreateDialog(day)}
-                        className="opacity-0 group-hover/cell:opacity-100 inline-flex h-5 w-5 items-center justify-center rounded bg-slate-100 hover:bg-slate-200 text-slate-500 transition cursor-pointer"
-                        title="Add task to this date"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </button>
-                    </div>
-
-                    {/* Task list container */}
-                    <div className="mt-2 flex-1 flex flex-col gap-1.5 overflow-y-auto max-h-[85px] scrollbar-thin">
-                      {dayTasks.map((task) => {
-                        const isTemp = task.id < 0;
-                        const catColor = CATEGORIES.find((c) => c.name === task.category) || CATEGORIES[0];
-                        return (
-                          <div
-                            key={task.id}
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, task.id)}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditDialog(task);
-                            }}
-                            style={{ borderLeftColor: task.color }}
-                            className={cn(
-                              "rounded-lg border border-slate-200/80 bg-white pl-2 pr-1.5 py-1 text-left text-slate-800 hover:border-slate-300 hover:shadow-xs transition duration-150 cursor-grab active:cursor-grabbing text-[11px] font-semibold flex items-center justify-between gap-1.5 truncate border-l-[3.5px]",
-                              isTemp && "opacity-60 pointer-events-none"
-                            )}
-                          >
-                            <span className="truncate flex-1 leading-tight">{task.title}</span>
-                            {task.type === "reminder" ? (
-                              <Bell className="h-3 w-3 text-slate-400 shrink-0" />
-                            ) : (
-                              <div
-                                className="h-2 w-2 rounded-full shrink-0"
-                                style={{ backgroundColor: task.color }}
-                              />
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <CalendarGrid
+            view={view}
+            daysGrid={daysGrid}
+            currentDate={currentDate}
+            draggedOverDate={draggedOverDate}
+            isSameDay={isSameDay}
+            getTasksForDay={getTasksForDay}
+            onDragOver={handleDragOver}
+            onDragEnter={(dateKey) => setDraggedOverDate(dateKey)}
+            onDragLeave={() => setDraggedOverDate(null)}
+            onDropOnDay={handleDropOnDay}
+            onDragStart={handleDragStart}
+            onEditTask={openEditDialog}
+            onQuickAddTask={openCreateDialog}
+          />
         </div>
 
-        {/* Draft Sidebar Panel */}
-        <aside
+        <DraftTaskPanel
+          draftTasks={draftTasks}
+          isLoading={isLoading}
+          isDraggedOverDrafts={isDraggedOverDrafts}
           onDragOver={handleDragOver}
           onDragEnter={(e) => {
             e.preventDefault();
@@ -662,266 +567,34 @@ function CalendarPageContent() {
           }}
           onDragLeave={() => setIsDraggedOverDrafts(false)}
           onDrop={handleDropOnDrafts}
-          className={cn(
-            "rounded-[24px] border border-[#eadfc8] bg-[#fbf7ef] p-5 shadow-sm flex flex-col min-h-[350px] transition-all duration-300",
-            isDraggedOverDrafts && "bg-emerald-50/50 border-emerald-300 border-dashed"
-          )}
-        >
-          {/* Draft Title Headers */}
-          <div className="flex items-center justify-between pb-3 border-b border-[#eadfc8]">
-            <div>
-              <h3 className="text-[17px] font-semibold tracking-tight text-slate-950 flex items-center gap-1.5">
-                Draft Task Panel
-              </h3>
-              <p className="text-[11.5px] text-slate-500 mt-0.5">
-                Unscheduled work waits here.
-              </p>
-            </div>
-            
-            <div className="flex items-center gap-1.5">
-              <span className="inline-flex h-6 px-2 items-center justify-center rounded-full bg-slate-200/60 text-[11.5px] font-bold text-slate-600">
-                {draftTasks.length}
-              </span>
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#eadfc8] bg-white text-slate-400 shadow-xs">
-                <Inbox className="h-4 w-4" />
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Add Draft Button */}
-          <button
-            onClick={() => openCreateDialog(null)}
-            className="mt-4 inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#eadfc8] hover:border-[#f15f49]/40 hover:bg-[#fff1eb]/30 hover:text-[#f15f49] text-slate-500 text-[13px] font-semibold transition cursor-pointer"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add draft
-          </button>
-
-          {/* Draft Tasks Lists */}
-          <div className="mt-4 flex-1 overflow-y-auto space-y-2 max-h-[400px] scrollbar-thin">
-            {isLoading ? (
-              <div className="py-12 text-center text-[13px] text-slate-400 font-medium">
-                Loading drafts...
-              </div>
-            ) : draftTasks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-14 px-4 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-slate-400 border border-[#eadfc8] shadow-sm">
-                  <FolderOpen className="h-6 w-6 text-[#eadfc8]" />
-                </div>
-                <h4 className="mt-4 text-[13.5px] font-semibold text-slate-800">No drafts waiting</h4>
-                <p className="mt-1 text-[11px] text-slate-500 max-w-[200px] leading-relaxed">
-                  Save unscheduled tasks here, then drag them onto a date.
-                </p>
-              </div>
-            ) : (
-              draftTasks.map((task) => (
-                <div
-                  key={task.id}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, task.id)}
-                  onClick={() => openEditDialog(task)}
-                  style={{ borderLeftColor: task.color }}
-                  className="rounded-xl border border-slate-200 bg-white p-3 text-left shadow-xs transition hover:shadow-sm hover:border-slate-300 cursor-grab active:cursor-grabbing border-l-[4px] relative group"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="text-[13px] font-semibold text-slate-900 truncate pr-4">
-                        {task.title}
-                      </div>
-                      {task.description && (
-                        <div className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">
-                          {task.description}
-                        </div>
-                      )}
-                    </div>
-                    {task.type === "reminder" && (
-                      <Bell className="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />
-                    )}
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between">
-                    <span
-                      style={{ color: task.color, backgroundColor: `${task.color}10`, borderColor: `${task.color}30` }}
-                      className="rounded-full px-2 py-0.5 text-[10px] font-bold border"
-                    >
-                      {task.category}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-medium italic">
-                      Draft
-                    </span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </aside>
+          onDragStart={handleDragStart}
+          onEditTask={openEditDialog}
+          onAddTask={() => openCreateDialog(null)}
+        />
       </div>
 
-      {/* CREATE & EDIT TASK MODAL DIALOG */}
-      {isDialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-xs">
-          <div className="w-full max-w-[500px] bg-white rounded-[20px] shadow-xl border border-[#eadfc8]/50 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200 p-6 md:p-8 space-y-6">
-            {/* Modal Header */}
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="text-[20px] font-semibold text-slate-900 tracking-tight">
-                  {selectedTask ? "Edit calendar item" : "Create calendar item"}
-                </h3>
-                <p className="text-[13.5px] text-slate-500 mt-1">
-                  Selected date: {getFormattedPresetDate()}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsDialogOpen(false)}
-                className="text-[13.5px] font-semibold text-slate-500 hover:text-slate-955 hover:underline transition cursor-pointer"
-              >
-                Close
-              </button>
-            </div>
-
-            {/* Modal Form */}
-            <form onSubmit={handleScheduleSubmit} className="space-y-5">
-              {/* Task Title */}
-              <div className="space-y-1.5">
-                <label className="text-[13.5px] font-semibold text-slate-800">
-                  Task title
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Write the next thing to remember"
-                  className="w-full px-4 py-3 rounded-xl border border-[#ebdcb9] bg-[#fffcf6] text-[13.5px] font-medium placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#f15f49] focus:border-[#f15f49] text-slate-800"
-                />
-              </div>
-
-              {/* Description */}
-              <div className="space-y-1.5">
-                <label className="text-[13.5px] font-semibold text-slate-800">
-                  Description
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Add helpful context"
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-xl border border-[#ebdcb9] bg-[#fffcf6] text-[13.5px] font-medium placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#f15f49] focus:border-[#f15f49] resize-none text-slate-800"
-                />
-              </div>
-
-              {/* Grid for Date, Time, Type */}
-              <div className="grid grid-cols-3 gap-4">
-                {/* Date Selection */}
-                <div className="space-y-1.5">
-                  <label className="text-[13.5px] font-semibold text-slate-800">
-                    Date
-                  </label>
-                  <input
-                    type="date"
-                    value={scheduleDate}
-                    onChange={(e) => handleDateChange(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-[#ebdcb9] bg-[#fffcf6] text-[13.5px] font-medium focus:outline-none focus:ring-1 focus:ring-[#f15f49] focus:border-[#f15f49] text-slate-700 cursor-pointer"
-                  />
-                </div>
-
-                {/* Time Selection */}
-                <div className="space-y-1.5 relative">
-                  <label className="text-[13.5px] font-semibold text-slate-800">
-                    Time
-                  </label>
-                  <input
-                    type="time"
-                    value={scheduleTime}
-                    onChange={(e) => setScheduleTime(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-[#ebdcb9] bg-[#fffcf6] text-[13.5px] font-medium focus:outline-none focus:ring-1 focus:ring-[#f15f49] focus:border-[#f15f49] text-slate-700 cursor-pointer"
-                  />
-                </div>
-
-                {/* Type Selection */}
-                <div className="space-y-1.5">
-                  <label className="text-[13.5px] font-semibold text-slate-800">
-                    Type
-                  </label>
-                  <select
-                    value={taskType}
-                    onChange={(e) => setTaskType(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-[#ebdcb9] bg-[#fffcf6] text-[13.5px] font-semibold text-slate-700 focus:outline-none focus:border-[#f15f49] focus:border-[#f15f49] cursor-pointer"
-                  >
-                    <option value="task">Task</option>
-                    <option value="reminder">Reminder</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Category */}
-              <div className="space-y-2">
-                <label className="text-[13.5px] font-semibold text-slate-800 block">
-                  Category
-                </label>
-                <div className="flex flex-wrap gap-2.5">
-                  {[
-                    { name: "Focus", dotBg: "bg-[#0284c7]", text: "text-[#0284c7]", border: "border-[#e0f2fe]" },
-                    { name: "Meeting", dotBg: "bg-[#d97706]", text: "text-[#d97706]", border: "border-[#fef3c7]" },
-                    { name: "Personal", dotBg: "bg-[#e11d48]", text: "text-[#e11d48]", border: "border-[#ffe4e6]" },
-                    { name: "Work", dotBg: "bg-[#10b981]", text: "text-[#10b981]", border: "border-[#d1fae5]" },
-                  ].map((cat) => {
-                    const isSelected = category === cat.name;
-                    return (
-                      <button
-                        key={cat.name}
-                        type="button"
-                        onClick={() => setCategory(cat.name)}
-                        className={cn(
-                          "inline-flex items-center gap-2 rounded-xl px-4 py-2 border text-[13px] font-semibold transition cursor-pointer",
-                          isSelected
-                            ? "border-[1.5px] border-[#f15f49] bg-white text-slate-900 shadow-xs"
-                            : cn(cat.border, cat.text, "bg-white hover:brightness-98")
-                        )}
-                      >
-                        <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", cat.dotBg)} />
-                        {cat.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Bottom Actions */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
-                {selectedTask ? (
-                  <button
-                    type="button"
-                    onClick={handleDeleteTask}
-                    className="text-rose-600 hover:text-rose-700 hover:underline font-bold text-[13.5px] transition cursor-pointer"
-                  >
-                    Delete task
-                  </button>
-                ) : (
-                  <div />
-                )}
-
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleSaveAsDraft}
-                    className="inline-flex h-[42px] items-center justify-center rounded-xl border border-[#ebdcb9] bg-[#fffcf6] text-slate-800 px-5 text-[13.5px] font-semibold hover:bg-slate-50 transition cursor-pointer shadow-xs"
-                  >
-                    Save draft
-                  </button>
-                  <button
-                    type="submit"
-                    className="inline-flex h-[42px] items-center justify-center rounded-xl bg-[#f15f49] hover:brightness-98 text-white px-6 text-[13.5px] font-semibold shadow-xs shadow-orange-100 transition cursor-pointer"
-                  >
-                    {selectedTask ? "Save changes" : "Schedule"}
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <TaskDialog
+        isOpen={isDialogOpen}
+        selectedTask={selectedTask}
+        dialogPresetDate={dialogPresetDate}
+        title={title}
+        setTitle={setTitle}
+        description={description}
+        setDescription={setDescription}
+        category={category}
+        setCategory={setCategory}
+        taskType={taskType}
+        setTaskType={setTaskType}
+        scheduleDate={scheduleDate}
+        setScheduleDate={setScheduleDate}
+        scheduleTime={scheduleTime}
+        setScheduleTime={setScheduleTime}
+        onClose={() => setIsDialogOpen(false)}
+        onSaveAsDraft={handleSaveAsDraft}
+        onScheduleSubmit={handleScheduleSubmit}
+        onDeleteTask={handleDeleteTask}
+        onDateChange={handleDateChange}
+      />
     </div>
   );
 }

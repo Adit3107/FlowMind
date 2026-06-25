@@ -1,8 +1,8 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { eq, and, inArray } from "drizzle-orm";
-import { db, kanbanBoards, kanbanColumns, kanbanTasks, tasks } from "@/db";
+import { db, kanbanBoards, kanbanColumns, kanbanTasks, tasks, kanbanBoardShares, users } from "@/db";
 import { revalidatePath } from "next/cache";
 
 // Helper to authenticate user
@@ -14,18 +14,61 @@ async function getAuthenticatedUser() {
   return userId;
 }
 
+// Helper to get authenticated user's email
+async function getAuthenticatedUserEmail() {
+  const user = await currentUser();
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+  const email =
+    user.primaryEmailAddress?.emailAddress ??
+    user.emailAddresses.find((e) => e.id === user.primaryEmailAddressId)?.emailAddress;
+
+  if (!email) {
+    throw new Error("Email not found");
+  }
+  return email;
+}
+
 // -------------------------------------------------------------
 // Board Actions
 // -------------------------------------------------------------
 
 export async function getBoards() {
   const userId = await getAuthenticatedUser();
+  const userEmail = await getAuthenticatedUserEmail();
   try {
-    return await db
+    // 1. Get owned boards
+    const ownedBoards = await db
       .select()
       .from(kanbanBoards)
       .where(eq(kanbanBoards.userId, userId))
       .orderBy(kanbanBoards.createdAt);
+
+    // 2. Get shared boards
+    const shares = await db
+      .select()
+      .from(kanbanBoardShares)
+      .where(eq(kanbanBoardShares.email, userEmail));
+    const sharedBoardIds = shares.map(s => s.boardId);
+
+    if (sharedBoardIds.length > 0) {
+      const sharedBoards = await db
+        .select()
+        .from(kanbanBoards)
+        .where(inArray(kanbanBoards.id, sharedBoardIds))
+        .orderBy(kanbanBoards.createdAt);
+
+      const allBoards = [...ownedBoards];
+      sharedBoards.forEach(sb => {
+        if (!allBoards.some(ob => ob.id === sb.id)) {
+          allBoards.push(sb);
+        }
+      });
+      return allBoards;
+    }
+
+    return ownedBoards;
   } catch (error) {
     console.error("Error fetching boards:", error);
     return [];
@@ -459,5 +502,128 @@ export async function deleteTaskCard(taskId: number) {
   } catch (error) {
     console.error("Error deleting task card:", error);
     throw new Error("Failed to delete task card");
+  }
+}
+
+// -------------------------------------------------------------
+// Share Actions
+// -------------------------------------------------------------
+
+export async function getBoardShares(boardId: number) {
+  await getAuthenticatedUser();
+  try {
+    return await db
+      .select()
+      .from(kanbanBoardShares)
+      .where(eq(kanbanBoardShares.boardId, boardId))
+      .orderBy(kanbanBoardShares.createdAt);
+  } catch (error) {
+    console.error("Error fetching board shares:", error);
+    return [];
+  }
+}
+
+export async function inviteUserToBoard(boardId: number, email: string) {
+  const userId = await getAuthenticatedUser();
+  const cleanEmail = email.trim().toLowerCase();
+
+  if (!cleanEmail) {
+    throw new Error("Email is required");
+  }
+
+  try {
+    // 1. Verify board ownership (only owner can share/invite)
+    const [board] = await db
+      .select()
+      .from(kanbanBoards)
+      .where(and(eq(kanbanBoards.id, boardId), eq(kanbanBoards.userId, userId)))
+      .limit(1);
+
+    if (!board) {
+      throw new Error("Only the board owner can invite users");
+    }
+
+    // 2. Check if already invited
+    const [existingShare] = await db
+      .select()
+      .from(kanbanBoardShares)
+      .where(
+        and(
+          eq(kanbanBoardShares.boardId, boardId),
+          eq(kanbanBoardShares.email, cleanEmail)
+        )
+      )
+      .limit(1);
+
+    if (existingShare) {
+      return existingShare;
+    }
+
+    // 3. Create invitation record
+    const [newShare] = await db
+      .insert(kanbanBoardShares)
+      .values({ boardId, email: cleanEmail })
+      .returning();
+
+    revalidatePath("/kanban");
+    return newShare;
+  } catch (error) {
+    console.error("Error inviting user:", error);
+    throw new Error(error instanceof Error ? error.message : "Failed to invite user");
+  }
+}
+
+export async function removeUserFromBoard(shareId: number) {
+  const userId = await getAuthenticatedUser();
+  try {
+    // Verify ownership of the board related to the share
+    const [share] = await db
+      .select()
+      .from(kanbanBoardShares)
+      .where(eq(kanbanBoardShares.id, shareId))
+      .limit(1);
+
+    if (!share) {
+      throw new Error("Share not found");
+    }
+
+    const [board] = await db
+      .select()
+      .from(kanbanBoards)
+      .where(and(eq(kanbanBoards.id, share.boardId), eq(kanbanBoards.userId, userId)))
+      .limit(1);
+
+    if (!board) {
+      throw new Error("Unauthorized to manage invitations for this board");
+    }
+
+    const [deletedShare] = await db
+      .delete(kanbanBoardShares)
+      .where(eq(kanbanBoardShares.id, shareId))
+      .returning();
+
+    revalidatePath("/kanban");
+    return deletedShare;
+  } catch (error) {
+    console.error("Error removing board share:", error);
+    throw new Error("Failed to remove board collaborator");
+  }
+}
+
+export async function getCollaboratorProfiles(clerkIds: string[]) {
+  await getAuthenticatedUser();
+  if (clerkIds.length === 0) return [];
+  try {
+    return await db
+      .select({
+        clerkId: users.clerkId,
+        name: users.name,
+        imageUrl: users.imageUrl,
+      })
+      .from(users)
+      .where(inArray(users.clerkId, clerkIds));
+  } catch (error) {
+    console.error("Error fetching collaborator profiles:", error);
+    return [];
   }
 }

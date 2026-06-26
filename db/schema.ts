@@ -64,6 +64,19 @@ export const kanbanBoardShares = pgTable("kanban_board_shares", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const notes = pgTable("notes", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  title: text("title").default("Untitled").notNull(),
+  content: text("content").default("").notNull(),
+  icon: text("icon").default("FileText").notNull(),
+  color: text("color").default("#10b981").notNull(),
+  isPinned: boolean("is_pinned").default(false).notNull(),
+  isTrashed: boolean("is_trashed").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
@@ -81,6 +94,9 @@ export type NewKanbanTask = typeof kanbanTasks.$inferInsert;
 
 export type KanbanBoardShare = typeof kanbanBoardShares.$inferSelect;
 export type NewKanbanBoardShare = typeof kanbanBoardShares.$inferInsert;
+
+export type Note = typeof notes.$inferSelect;
+export type NewNote = typeof notes.$inferInsert;
 
 
 

@@ -50,7 +50,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "Calendar", icon: CalendarDays, color: "text-emerald-600", href: "/calendar" },
       { label: "Task / Kanban", icon: SquareKanban, color: "text-amber-600", href: "/kanban" },
-      { label: "Notes", icon: StickyNote, color: "text-sky-600", href: "#" },
+      { label: "Notes", icon: StickyNote, color: "text-sky-600", href: "/notes" },
       { label: "Whiteboard", icon: PenTool, color: "text-rose-500", href: "#" },
       { label: "Pages / Spaces", icon: BookOpenText, color: "text-indigo-500", href: "#" },
     ],

@@ -51,7 +51,7 @@ const navGroups: NavGroup[] = [
       { label: "Calendar", icon: CalendarDays, color: "text-emerald-600", href: "/calendar" },
       { label: "Task / Kanban", icon: SquareKanban, color: "text-amber-600", href: "/kanban" },
       { label: "Notes", icon: StickyNote, color: "text-sky-600", href: "/notes" },
-      { label: "Whiteboard", icon: PenTool, color: "text-rose-500", href: "#" },
+      { label: "Whiteboard", icon: PenTool, color: "text-rose-500", href: "/whiteboard" },
       { label: "Pages / Spaces", icon: BookOpenText, color: "text-indigo-500", href: "#" },
     ],
   },
@@ -218,7 +218,7 @@ export function SidebarLayout({
     <SidebarContext.Provider value={{ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }}>
       <div className="min-h-screen bg-[#f6f1e6] text-slate-900 flex">
         <Sidebar activeLabel={activeLabel} />
-        <div className="flex flex-col flex-1 min-w-0 min-h-screen">
+        <div className="flex flex-col flex-1 min-w-0 min-h-0 h-screen overflow-hidden">
           {children}
         </div>
       </div>

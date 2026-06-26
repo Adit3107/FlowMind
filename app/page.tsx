@@ -29,6 +29,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import { SidebarLayout, useSidebar } from "@/components/sidebar";
+import { useUser } from "@clerk/nextjs";
 
 // NavGroup types and sidebar navigation config moved to components/sidebar.tsx
 
@@ -137,6 +138,9 @@ export default function Home() {
 
 function DashboardContent() {
   const { setIsMobileOpen } = useSidebar();
+  const { user } = useUser();
+
+  const displayName = user?.fullName ?? user?.firstName ?? user?.username ?? "there";
 
   return (
     <div className="flex min-h-screen flex-1 flex-col md:ml-0">
@@ -157,7 +161,7 @@ function DashboardContent() {
                   Dashboard
                 </div>
                 <h1 className="mt-2 text-[46px] font-semibold leading-[1.05] tracking-[-0.04em] text-slate-950 md:text-[56px]">
-                  Welcome back, Zack Crawley.
+                  Welcome back, {displayName}.
                 </h1>
                 <p className="mt-4 max-w-3xl text-[16px] leading-7 text-slate-600 md:text-[17px]">
                   Your workspace is awake: tasks, calendar, pages, and AI work are gathered here for a clear start.

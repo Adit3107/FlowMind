@@ -77,6 +77,16 @@ export const notes = pgTable("notes", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const whiteboards = pgTable("whiteboards", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  name: text("name").default("Untitled Whiteboard").notNull(),
+  color: text("color").default("#f15f49").notNull(),
+  elements: text("elements").default("[]").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
@@ -97,6 +107,9 @@ export type NewKanbanBoardShare = typeof kanbanBoardShares.$inferInsert;
 
 export type Note = typeof notes.$inferSelect;
 export type NewNote = typeof notes.$inferInsert;
+
+export type Whiteboard = typeof whiteboards.$inferSelect;
+export type NewWhiteboard = typeof whiteboards.$inferInsert;
 
 
 

@@ -52,14 +52,14 @@ const navGroups: NavGroup[] = [
       { label: "Task / Kanban", icon: SquareKanban, color: "text-amber-600", href: "/kanban" },
       { label: "Notes", icon: StickyNote, color: "text-sky-600", href: "/notes" },
       { label: "Whiteboard", icon: PenTool, color: "text-rose-500", href: "/whiteboard" },
-      { label: "Pages / Spaces", icon: BookOpenText, color: "text-indigo-500", href: "#" },
+      { label: "Pages / Spaces", icon: BookOpenText, color: "text-indigo-500", href: "/spaces" },
     ],
   },
   {
     label: "BUILD",
     items: [
       { label: "AI Template Builder", icon: Wand2, color: "text-pink-500", href: "#" },
-      { label: "Settings", icon: Settings2, color: "text-slate-500", href: "#" },
+      { label: "Settings", icon: Settings2, color: "text-slate-500", href: "/settings" },
     ],
   },
 ];

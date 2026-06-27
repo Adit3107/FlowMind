@@ -111,5 +111,33 @@ export type NewNote = typeof notes.$inferInsert;
 export type Whiteboard = typeof whiteboards.$inferSelect;
 export type NewWhiteboard = typeof whiteboards.$inferInsert;
 
+export const spaces = pgTable("spaces", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  color: text("color").default("#8b5cf6").notNull(), // Purple default
+  isFavorite: boolean("is_favorite").default(false).notNull(),
+  isArchived: boolean("is_archived").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 
+export const pages = pgTable("pages", {
+  id: serial("id").primaryKey(),
+  spaceId: integer("space_id").notNull(), // relates to spaces.id
+  userId: text("user_id").notNull(),
+  title: text("title").notNull(),
+  type: text("type").default("Blank Page").notNull(),
+  content: text("content").default("").notNull(),
+  isFavorite: boolean("is_favorite").default(false).notNull(),
+  isArchived: boolean("is_archived").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 
+export type Space = typeof spaces.$inferSelect;
+export type NewSpace = typeof spaces.$inferInsert;
+
+export type Page = typeof pages.$inferSelect;
+export type NewPage = typeof pages.$inferInsert;
